@@ -11,7 +11,9 @@ enum : int64_t {
     OP_STORE, // store value from src to stack
     OP_LOAD, // load value from stack to reg
     OP_ADD, // sum values
+    OP_ADDS, // sum values on the stack
 
+    _OP_NUM,
     MOD_TOREG_IMM,
     MOD_TOREG_REG,
 };
@@ -42,10 +44,11 @@ struct REG_ARG {
         };
         int64_t value = {};
     };
+    bool is_reg = false;
 
     constexpr REG_ARG(int64_t v = 0) noexcept : value(v) {}
-    constexpr REG_ARG(REG r) noexcept : reg(r) {}
-    constexpr REG_ARG(REG r, int64_t off) noexcept : reg(r), offset(off) {}
+    constexpr REG_ARG(REG r) noexcept : reg(r), is_reg(true) {}
+    constexpr REG_ARG(REG r, int64_t off) noexcept : reg(r), offset(off), is_reg(true) {}
 
     inline auto is_stack_reg() {
         return reg == REGBP || reg == REGSP;
@@ -62,12 +65,16 @@ namespace op_impl {
     void _on_mov(op_impl_args);
     void _on_store(op_impl_args);
     void _on_load(op_impl_args);
+    void _on_add(op_impl_args);
+    void _on_adds(op_impl_args);
 }
 
-const pfn_op_impl _op_impl[] = {
+const pfn_op_impl _op_impl[_OP_NUM] = {
     &op_impl::_on_mov,
     &op_impl::_on_store,
     &op_impl::_on_load,
+    &op_impl::_on_add,
+    &op_impl::_on_adds,
 };
 
 struct op_t {
@@ -105,7 +112,6 @@ inline auto store(REG_ARG reg_src) {
     return op_t{
         .op = OP_STORE,
         .val0 = reg_src,
-        .val1 = 1
     };
 }
 
@@ -122,6 +128,12 @@ inline auto add(REG_ARG reg_dst, REG_ARG a, REG_ARG b) {
         .val0 = reg_dst,
         .val1 = a,
         .val2 = b
+    };
+}
+
+inline auto adds() {
+    return op_t{
+        .op = OP_ADDS,
     };
 }
 

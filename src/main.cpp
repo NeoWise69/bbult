@@ -31,7 +31,11 @@ auto main(int argc, char** argv) -> int32_t {
         mov(REGC, 12),
         store(REGC),
         mov(REGC, 23),
-        load(REGD)
+        load(REGD),
+        store(REGC),
+        store(REGD),
+        adds(),
+        load(REGC),
     };
     execute_program(test_ops);
 }

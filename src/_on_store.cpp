@@ -1,7 +1,7 @@
 #include "bbult.interp.hpp"
 
-void op_impl::_on_store(op_impl_args_named(a, is_reg, _)) {
-    if (is_reg.value) {
+void op_impl::_on_store(op_impl_args_named(a, _1, _2)) {
+    if (a.is_reg) {
         // store register value
         if (a.is_stack_reg()) {
             const auto val = stack[regs[a.reg] + a.offset];
