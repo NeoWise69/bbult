@@ -27,15 +27,7 @@ auto main(int argc, char** argv) -> int32_t {
 
     fprintf(stdout, "%s", welcome);
 
-    std::vector<op_t> test_ops = {
-        mov(REGC, 12),
-        store(REGC),
-        mov(REGC, 23),
-        load(REGD),
-        store(REGC),
-        store(REGD),
-        adds(),
-        load(REGC),
-    };
-    execute_program(test_ops);
+    execute_program({
+        
+    });
 }

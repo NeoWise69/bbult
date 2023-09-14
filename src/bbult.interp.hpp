@@ -12,11 +12,19 @@ enum : int64_t {
     OP_LOAD, // load value from stack to reg
     OP_ADD, // sum values
     OP_ADDS, // sum values on the stack
+    OP_SUB, // subs values
+    OP_SUBS, // subs values on the stack
+    OP_REST, // reset REG
+    OP_MUL,
+    OP_MULS,
+    OP_DIV,
+    OP_DIVS,
 
     _OP_NUM,
     MOD_TOREG_IMM,
     MOD_TOREG_REG,
 };
+
 
 
 #define op_impl_args_named(a, b, c) REG_ARG a, REG_ARG b, REG_ARG c
@@ -50,8 +58,12 @@ struct REG_ARG {
     constexpr REG_ARG(REG r) noexcept : reg(r), is_reg(true) {}
     constexpr REG_ARG(REG r, int64_t off) noexcept : reg(r), offset(off), is_reg(true) {}
 
-    inline auto is_stack_reg() {
+    inline auto is_stack_reg() const noexcept {
         return reg == REGBP || reg == REGSP;
+    }
+
+    inline auto is_readonly_reg() const noexcept {
+        return is_stack_reg() || reg == REGPC;
     }
 
     inline operator int64_t() const noexcept {
@@ -67,6 +79,13 @@ namespace op_impl {
     void _on_load(op_impl_args);
     void _on_add(op_impl_args);
     void _on_adds(op_impl_args);
+    void _on_sub(op_impl_args);
+    void _on_subs(op_impl_args);
+    void _on_rest(op_impl_args);
+    void _on_mul(op_impl_args);
+    void _on_muls(op_impl_args);
+    void _on_div(op_impl_args);
+    void _on_divs(op_impl_args);
 }
 
 const pfn_op_impl _op_impl[_OP_NUM] = {
@@ -75,6 +94,13 @@ const pfn_op_impl _op_impl[_OP_NUM] = {
     &op_impl::_on_load,
     &op_impl::_on_add,
     &op_impl::_on_adds,
+    &op_impl::_on_sub,
+    &op_impl::_on_subs,
+    &op_impl::_on_rest,
+    &op_impl::_on_mul,
+    &op_impl::_on_muls,
+    &op_impl::_on_div,
+    &op_impl::_on_divs,
 };
 
 struct op_t {
@@ -137,6 +163,58 @@ inline auto adds() {
     };
 }
 
+inline auto sub(REG_ARG reg_dst, REG_ARG a, REG_ARG b) {
+    return op_t{
+        .op = OP_SUB,
+        .val0 = reg_dst,
+        .val1 = a,
+        .val2 = b
+    };
+}
+
+inline auto subs() {
+    return op_t{
+        .op = OP_SUBS,
+    };
+}
+
+inline auto rest(REG_ARG reg) {
+    return op_t{
+        .op = OP_REST,
+        .val0 = reg,
+    };
+}
+
+inline auto mul(REG_ARG reg_dst, REG_ARG a, REG_ARG b) {
+    return op_t{
+        .op = OP_MUL,
+        .val0 = reg_dst,
+        .val1 = a,
+        .val2 = b
+    };
+}
+
+inline auto muls() {
+    return op_t{
+        .op = OP_MULS,
+    };
+}
+
+inline auto div(REG_ARG reg_dst, REG_ARG a, REG_ARG b) {
+    return op_t{
+        .op = OP_DIV,
+        .val0 = reg_dst,
+        .val1 = a,
+        .val2 = b
+    };
+}
+
+inline auto divs() {
+    return op_t{
+        .op = OP_DIVS,
+    };
+}
+
 inline auto execute_single(const op_t& op) {
     if (const auto fn = _op_impl[op.op]) {
         fn(op.val0, op.val1, op.val2);
@@ -161,7 +239,7 @@ inline auto dump_state() {
     }
 }
 
-inline auto execute_program(const std::span<op_t>& code) {
+inline auto execute_program(const std::vector<op_t>& code) {
     int64_t& pc = regs[REGPC];
     for (; pc < code.size(); pc++) {
         execute_single(code[pc]);
